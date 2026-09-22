@@ -1,6 +1,6 @@
 # Komerza → Skinloop Rust Worker
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/bearyx-dev/skinloop-komerza-cloudflare)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Skin-loop/skinloop-komerza-cloudflare)
 
 Standalone Cloudflare Worker template for merchants. It creates an immutable,
 Rust-only Skinloop hosted checkout, validates signed webhooks over the exact raw
