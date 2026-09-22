@@ -20,6 +20,10 @@ test("Cloudflare preconfiguration omits post-deploy and standard default fields"
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),
   );
   const bindings = packageJson.cloudflare.bindings;
+  const exampleSecrets = readFileSync(
+    new URL("../.dev.vars.example", import.meta.url),
+    "utf8",
+  );
   for (const name of [
     "SKINLOOP_WEBHOOK_SECRET_CURRENT",
     "SKINLOOP_WEBHOOK_SECRET_PREVIOUS",
@@ -30,6 +34,10 @@ test("Cloudflare preconfiguration omits post-deploy and standard default fields"
   ]) {
     assert.equal(bindings[name], undefined);
   }
+  assert.doesNotMatch(
+    exampleSecrets,
+    /SKINLOOP_WEBHOOK_SECRET_(?:CURRENT|PREVIOUS)/,
+  );
 });
 
 test("initial deployment exposes setup details but keeps payment routes locked", async () => {
