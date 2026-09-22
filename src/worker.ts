@@ -15,14 +15,16 @@
  * Variables:
  *   SKINLOOP_API_BASE_URL
  *   SKINLOOP_HOSTED_ORIGIN
- *   PUBLIC_BASE_URL
  *   KOMERZA_STORE_ID
- *   USD_PER_EUR
- *   FX_BUFFER_BPS
- *   CHECKOUT_EXPIRES_SECONDS
+ *   USD_PER_EUR (optional override; defaults to 1.20)
+ *   FX_BUFFER_BPS (optional override; defaults to 500)
+ *   CHECKOUT_EXPIRES_SECONDS (optional override; defaults to 3600)
  */
 
 const KOMERZA_API = "https://api.komerza.com";
+const DEFAULT_USD_PER_EUR = "1.20";
+const DEFAULT_FX_BUFFER_BPS = "500";
+const DEFAULT_CHECKOUT_EXPIRES_SECONDS = "3600";
 const ACTIVE_STATUSES = new Set([
   "creating",
   "created",
@@ -65,15 +67,18 @@ const KOMERZA_ALREADY_FULFILLED = new Set([
 const worker = {
   async fetch(request, env, ctx) {
     try {
-      validateConfiguration(env);
       const url = new URL(request.url);
 
       if (request.method === "GET" && url.pathname === "/") {
+        validateConfiguration(env, { allowMissingWebhookSecret: true });
         return json({
           ok: true,
           service: "Komerza Skinloop Rust Bridge",
+          setupRequired: !String(env.SKINLOOP_WEBHOOK_SECRET_CURRENT || "").trim(),
+          webhookEndpoint: `${url.origin}/webhook/skinloop`,
         });
       }
+      validateConfiguration(env);
       if (request.method === "GET" && url.pathname === "/pay") {
         return startCheckout(url, env);
       }
@@ -147,7 +152,7 @@ async function startCheckout(url, env) {
   }
   if (local?.payment_status === "completed") {
     return Response.redirect(
-      `${publicBase(env)}/return?order=${encodeURIComponent(orderId)}`,
+      `${publicBase(url, env)}/return?order=${encodeURIComponent(orderId)}`,
       303,
     );
   }
@@ -246,8 +251,8 @@ async function startCheckout(url, env) {
           customerEmail: order.customerEmail,
         amount: { value: usdMinor, currency: "USD" },
         allowedGames: ["rust"],
-        successUrl: `${publicBase(env)}/return?order=${encodeURIComponent(orderId)}`,
-        cancelUrl: `${publicBase(env)}/cancel?order=${encodeURIComponent(orderId)}`,
+        successUrl: `${publicBase(url, env)}/return?order=${encodeURIComponent(orderId)}`,
+        cancelUrl: `${publicBase(url, env)}/cancel?order=${encodeURIComponent(orderId)}`,
         metadata: {
           supportReference,
           source: "komerza",
@@ -1259,8 +1264,8 @@ function convertToUsdMinor(amountMajor, currency, env) {
   if (currency !== "EUR") {
     throw new Error(`Unsupported Komerza currency: ${currency}`);
   }
-  const rateScaled = decimalToScaled(env.USD_PER_EUR, 1_000_000);
-  const bufferBps = integerInRange(env.FX_BUFFER_BPS ?? "500", 0, 5000);
+  const rateScaled = decimalToScaled(env.USD_PER_EUR || DEFAULT_USD_PER_EUR, 1_000_000);
+  const bufferBps = integerInRange(env.FX_BUFFER_BPS || DEFAULT_FX_BUFFER_BPS, 0, 5000);
   const numerator =
     BigInt(sourceMinor) *
     BigInt(rateScaled) *
@@ -1489,17 +1494,15 @@ async function notifyDiscord() {
   // to a third-party notification service.
 }
 
-function validateConfiguration(env) {
+function validateConfiguration(env, { allowMissingWebhookSecret = false } = {}) {
   const required = [
     "SKINLOOP_API_BASE_URL",
     "SKINLOOP_API_KEY",
-    "SKINLOOP_WEBHOOK_SECRET_CURRENT",
     "SKINLOOP_HOSTED_ORIGIN",
-    "PUBLIC_BASE_URL",
     "KOMERZA_API_KEY",
     "KOMERZA_STORE_ID",
-    "USD_PER_EUR",
   ];
+  if (!allowMissingWebhookSecret) required.push("SKINLOOP_WEBHOOK_SECRET_CURRENT");
   const missing = required.filter((name) => !String(env[name] || "").trim());
   if (missing.length) throw new Error(`Missing configuration: ${missing.join(", ")}`);
   if (!env.DB || !env.FULFILLMENT_QUEUE) {
@@ -1508,19 +1511,23 @@ function validateConfiguration(env) {
   for (const name of [
     "SKINLOOP_API_BASE_URL",
     "SKINLOOP_HOSTED_ORIGIN",
-    "PUBLIC_BASE_URL",
   ]) {
     const parsed = new URL(env[name]);
     if (parsed.protocol !== "https:") throw new Error(`${name} must use HTTPS`);
   }
 }
 
-function publicBase(env) {
-  return String(env.PUBLIC_BASE_URL).replace(/\/+$/, "");
+function publicBase(requestUrl, env) {
+  const configured = String(env.PUBLIC_BASE_URL || "").trim();
+  return (configured || requestUrl.origin).replace(/\/+$/, "");
 }
 
 function checkoutExpiry(env) {
-  return integerInRange(env.CHECKOUT_EXPIRES_SECONDS || "3600", 300, 86400);
+  return integerInRange(
+    env.CHECKOUT_EXPIRES_SECONDS || DEFAULT_CHECKOUT_EXPIRES_SECONDS,
+    300,
+    86400,
+  );
 }
 
 function integerInRange(value, min, max) {

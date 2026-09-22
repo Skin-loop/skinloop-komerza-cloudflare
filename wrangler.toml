@@ -5,11 +5,7 @@ compatibility_date = "2026-09-22"
 [vars]
 SKINLOOP_API_BASE_URL = ""
 SKINLOOP_HOSTED_ORIGIN = ""
-PUBLIC_BASE_URL = ""
 KOMERZA_STORE_ID = ""
-USD_PER_EUR = ""
-FX_BUFFER_BPS = ""
-CHECKOUT_EXPIRES_SECONDS = ""
 SHOP_URL = ""
 
 [triggers]

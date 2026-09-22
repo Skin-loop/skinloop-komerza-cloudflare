@@ -16,12 +16,6 @@
       "SKINLOOP_API_KEY": {
         "description": "Skinloop server API key with checkout:create and checkout:read scopes, restricted to Rust."
       },
-      "SKINLOOP_WEBHOOK_SECRET_CURRENT": {
-        "description": "Signing secret for the Skinloop webhook endpoint created for this Worker."
-      },
-      "SKINLOOP_WEBHOOK_SECRET_PREVIOUS": {
-        "description": "Optional previous Skinloop webhook signing secret during rotation. Leave empty when not rotating."
-      },
       "KOMERZA_API_KEY": {
         "description": "Komerza server API key for the merchant store. This remains in the merchant's Cloudflare account."
       },
@@ -31,20 +25,8 @@
       "SKINLOOP_HOSTED_ORIGIN": {
         "description": "Allowed origin for Skinloop hosted checkout URLs."
       },
-      "PUBLIC_BASE_URL": {
-        "description": "Public HTTPS origin assigned to this Worker, without a trailing slash."
-      },
       "KOMERZA_STORE_ID": {
         "description": "Komerza store UUID that owns the orders handled by this Worker."
-      },
-      "USD_PER_EUR": {
-        "description": "EUR-to-USD conversion rate, for example 1.20."
-      },
-      "FX_BUFFER_BPS": {
-        "description": "FX conversion buffer in basis points, for example 500 for 5%."
-      },
-      "CHECKOUT_EXPIRES_SECONDS": {
-        "description": "Hosted checkout lifetime in seconds, for example 3600."
       },
       "SHOP_URL": {
         "description": "Customer-facing Komerza shop URL used by return and cancel pages."

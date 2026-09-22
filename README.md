@@ -14,13 +14,15 @@ and merchant Cloudflare credentials are never sent to or stored by Skinloop.
 
 ## Secrets (Cloudflare encrypted secrets only)
 
-Required: `SKINLOOP_API_KEY`, `SKINLOOP_WEBHOOK_SECRET_CURRENT`,
-`KOMERZA_API_KEY`. Optional during rotation:
-`SKINLOOP_WEBHOOK_SECRET_PREVIOUS`. Never put these in source, D1, or `.env`.
+The initial deployment requires `SKINLOOP_API_KEY` and `KOMERZA_API_KEY`.
+After Cloudflare assigns the Worker URL, create the Skinloop webhook endpoint and
+store its one-time signing secret as `SKINLOOP_WEBHOOK_SECRET_CURRENT`.
+`SKINLOOP_WEBHOOK_SECRET_PREVIOUS` is optional during rotation. Never put these
+secrets in source, D1, or `.env`.
 
-Variables in `wrangler.toml` are safe configuration: API/origin URLs, worker
-URL, Komerza store ID, EUR/USD rate, buffer, expiry, and shop URL. Replace all
-example values before deployment.
+Variables in `wrangler.toml` are safe merchant configuration. The Worker uses
+standard defaults of `1.20` USD/EUR, a `500` BPS FX buffer, and a `3600`-second
+checkout lifetime. These can be overridden later in Cloudflare if needed.
 
 ## Provision and deploy
 
@@ -30,16 +32,20 @@ provision resources and migrations:
 ```sh
 npm install
 bash scripts/provision.sh
-# Edit wrangler.toml and supply every safe variable.
+# Edit wrangler.toml and supply the merchant-specific variables.
 wrangler secret put SKINLOOP_API_KEY
-wrangler secret put SKINLOOP_WEBHOOK_SECRET_CURRENT
 wrangler secret put KOMERZA_API_KEY
 bash scripts/deploy.sh
+# Open the Worker root URL and copy the reported webhookEndpoint into Skinloop.
+# Then save Skinloop's one-time secret in Cloudflare:
+wrangler secret put SKINLOOP_WEBHOOK_SECRET_CURRENT
 ```
 
 Configure the queue consumer with batch size 1, timeout 5 seconds, ten retries,
 and `komerza-skinloop-rust-dead-letter` as its DLQ (the config declares these
-bindings). Register `/webhook/skinloop` in Skinloop and allow Rust only.
+bindings). Until the webhook secret is added, only the root setup response is
+available; payment, webhook, queue, and scheduled processing fail closed.
+Register `/webhook/skinloop` in Skinloop and allow Rust only.
 The storefront sends customers to `/pay?ref=<unpaid Komerza order id>`.
 
 Run `npm test` for pure invariant tests. A production smoke test should use a

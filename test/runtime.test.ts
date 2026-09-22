@@ -11,6 +11,60 @@ test("runtime rejects event type/status mismatches", () => {
   assert.equal(helpers.eventStatusAgrees("payment.reverted", "reverted"), true);
 });
 
+test("standard deployment defaults do not require merchant FX or expiry input", () => {
+  assert.equal(helpers.convertToUsdMinor(1, "EUR", {}), 126);
+});
+
+test("Cloudflare preconfiguration omits post-deploy and standard default fields", () => {
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  const bindings = packageJson.cloudflare.bindings;
+  for (const name of [
+    "SKINLOOP_WEBHOOK_SECRET_CURRENT",
+    "SKINLOOP_WEBHOOK_SECRET_PREVIOUS",
+    "PUBLIC_BASE_URL",
+    "USD_PER_EUR",
+    "FX_BUFFER_BPS",
+    "CHECKOUT_EXPIRES_SECONDS",
+  ]) {
+    assert.equal(bindings[name], undefined);
+  }
+});
+
+test("initial deployment exposes setup details but keeps payment routes locked", async () => {
+  const env = {
+    SKINLOOP_API_BASE_URL: "https://api.example.com",
+    SKINLOOP_API_KEY: "test-api-key",
+    SKINLOOP_HOSTED_ORIGIN: "https://checkout.example.com",
+    KOMERZA_API_KEY: "test-komerza-key",
+    KOMERZA_STORE_ID: "test-store",
+    DB: {},
+    FULFILLMENT_QUEUE: {},
+  };
+  const ctx = { waitUntil() {} };
+
+  const setup = await worker.fetch(
+    new Request("https://merchant.workers.dev/"),
+    env,
+    ctx,
+  );
+  assert.equal(setup.status, 200);
+  assert.deepEqual(await setup.json(), {
+    ok: true,
+    service: "Komerza Skinloop Rust Bridge",
+    setupRequired: true,
+    webhookEndpoint: "https://merchant.workers.dev/webhook/skinloop",
+  });
+
+  const payment = await worker.fetch(
+    new Request("https://merchant.workers.dev/pay?ref=order-123"),
+    env,
+    ctx,
+  );
+  assert.equal(payment.status, 500);
+});
+
 test("runtime monotonic helper does not permit nonterminal regression", () => {
   assert.equal(helpers.transitionPaymentStatus("completed", "pending"), "completed");
   assert.equal(helpers.transitionPaymentStatus("reverted", "completed"), "reverted");
