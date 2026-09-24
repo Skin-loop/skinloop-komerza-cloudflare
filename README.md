@@ -9,8 +9,9 @@ delivery only after `completed` plus `fulfillmentAllowed: true`.
 
 Cloudflare's deploy flow provisions the Worker, D1 database, fulfillment Queue,
 dead-letter Queue, bindings, migrations, and scheduled outbox recovery in the
-merchant's account. It prompts the merchant for required configuration; Komerza
-and merchant Cloudflare credentials are never sent to or stored by Skinloop.
+merchant's account. The Skinloop service URLs are preconfigured; merchants
+provide their store ID, shop URL, and API keys. Komerza and merchant Cloudflare
+credentials are never sent to or stored by Skinloop.
 
 ## Secrets (Cloudflare encrypted secrets only)
 
@@ -20,7 +21,8 @@ store its one-time signing secret as `SKINLOOP_WEBHOOK_SECRET_CURRENT`.
 `SKINLOOP_WEBHOOK_SECRET_PREVIOUS` is optional during rotation. Never put these
 secrets in source, D1, or `.env`.
 
-Variables in `wrangler.toml` are safe merchant configuration. The Worker uses
+The Skinloop API and checkout URLs are preconfigured in `wrangler.toml`. Set
+only `KOMERZA_STORE_ID` and `SHOP_URL` for your shop. The Worker uses
 standard defaults of `1.20` USD/EUR, a `500` BPS FX buffer, and a `3600`-second
 checkout lifetime. These can be overridden later in Cloudflare if needed.
 
@@ -32,7 +34,7 @@ provision resources and migrations:
 ```sh
 npm install
 bash scripts/provision.sh
-# Edit wrangler.toml and supply the merchant-specific variables.
+# Set KOMERZA_STORE_ID and SHOP_URL in wrangler.toml.
 wrangler secret put SKINLOOP_API_KEY
 wrangler secret put KOMERZA_API_KEY
 bash scripts/deploy.sh

@@ -5,8 +5,8 @@
    uses that session and does not read or write credentials.
 2. Run `bash scripts/provision.sh`; it creates queues/DLQ and D1, captures the
    D1 ID, updates config, and applies remote migrations. It does not deploy.
-3. Set the merchant-specific safe variables: Skinloop API base and hosted
-   origins, `KOMERZA_STORE_ID`, and `SHOP_URL`. The Worker defaults to a
+3. Set `KOMERZA_STORE_ID` and `SHOP_URL` in `wrangler.toml`; Skinloop API and
+   hosted checkout URLs are preconfigured. The Worker defaults to a
    1.20 USD/EUR rate, 500 BPS FX buffer, and 3600-second checkout lifetime.
 4. Add the encrypted secrets available before deployment:
 

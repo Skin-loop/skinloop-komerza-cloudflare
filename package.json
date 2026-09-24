@@ -19,12 +19,6 @@
       "KOMERZA_API_KEY": {
         "description": "Komerza server API key for the merchant store. This remains in the merchant's Cloudflare account."
       },
-      "SKINLOOP_API_BASE_URL": {
-        "description": "Exact Skinloop merchant API base URL shown in the Skinloop dashboard."
-      },
-      "SKINLOOP_HOSTED_ORIGIN": {
-        "description": "Allowed origin for Skinloop hosted checkout URLs."
-      },
       "KOMERZA_STORE_ID": {
         "description": "Komerza store UUID that owns the orders handled by this Worker."
       },

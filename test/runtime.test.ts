@@ -40,6 +40,23 @@ test("Cloudflare preconfiguration omits post-deploy and standard default fields"
   );
 });
 
+test("Cloudflare template fixes Skinloop endpoints without merchant bindings", () => {
+  const wrangler = readFileSync(
+    new URL("../wrangler.toml", import.meta.url),
+    "utf8",
+  );
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  const bindings = packageJson.cloudflare.bindings;
+  assert.match(wrangler, /SKINLOOP_API_BASE_URL = "https:\/\/api\.skinloop\.io"/);
+  assert.match(wrangler, /SKINLOOP_HOSTED_ORIGIN = "https:\/\/checkout\.skinloop\.io"/);
+  assert.ok(bindings.KOMERZA_STORE_ID);
+  assert.ok(bindings.SHOP_URL);
+  assert.equal(bindings.SKINLOOP_API_BASE_URL, undefined);
+  assert.equal(bindings.SKINLOOP_HOSTED_ORIGIN, undefined);
+});
+
 test("initial deployment exposes setup details but keeps payment routes locked", async () => {
   const env = {
     SKINLOOP_API_BASE_URL: "https://api.example.com",
